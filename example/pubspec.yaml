@@ -1,0 +1,16 @@
+name: example
+description: 正弦波浪进度条组件示例应用。
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  process_bar_with_sine:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
