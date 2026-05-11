@@ -37,6 +37,7 @@ class _ExamplePageState extends State<ExamplePage> {
   // 演示用的配置
   ThumbShape _thumbShape = ThumbShape.circle;
   bool _sineWaveEnabled = true;
+  double _thumbGap = 0.0;
   double _thumbBarGap = 0.0;
   double _barBorderRadius = 0.0;
 
@@ -56,6 +57,7 @@ class _ExamplePageState extends State<ExamplePage> {
               progress: _progress,
               total: _total,
               thumbShape: _thumbShape,
+              thumbGap: _thumbGap,
               thumbBarGap: _thumbBarGap,
               barBorderRadius: _barBorderRadius > 0 ? _barBorderRadius : null,
               sineWaveConfig: _sineWaveEnabled
@@ -135,7 +137,30 @@ class _ExamplePageState extends State<ExamplePage> {
             ),
             const SizedBox(height: 8),
 
-            // 间隙滑块
+            // 滑块分段间隙
+            Row(
+              children: [
+                const Text('分段间隙'),
+                Expanded(
+                  child: Slider(
+                    value: _thumbGap,
+                    min: 0,
+                    max: 30,
+                    divisions: 30,
+                    label: _thumbGap.toStringAsFixed(0),
+                    onChanged: (v) {
+                      setState(() {
+                        _thumbGap = v;
+                      });
+                    },
+                  ),
+                ),
+                Text(_thumbGap.toStringAsFixed(0)),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 端点间隙滑块
             Row(
               children: [
                 const Text('滑块间隙'),

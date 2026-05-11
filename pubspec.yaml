@@ -1,5 +1,5 @@
 name: process_bar_with_sine
-description: 一个增强版 Flutter 进度条组件，支持正弦波浪线动画、可定义滑块形状和进度条样式。
+description: An enhanced Flutter progress bar library following Material Design 3, featuring dynamic sine-wave animations. It offers deep customization for thumb shapes and track styles, delivering a fluid and personalized interactive experience.
 version: 1.0.0
 
 environment:

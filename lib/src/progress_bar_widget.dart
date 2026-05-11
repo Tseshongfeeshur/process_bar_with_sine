@@ -48,6 +48,7 @@ class ProgressBar extends StatefulWidget {
     this.thumbShape = ThumbShape.circle,
     this.thumbCustomPainter,
     this.thumbBarGap = 0.0,
+    this.thumbGap = 0.0,
     this.timeLabelLocation,
     this.timeLabelType,
     this.timeLabelTextStyle,
@@ -180,6 +181,14 @@ class ProgressBar extends StatefulWidget {
   /// 正值表示更大的间隙，负值表示滑块会与进度条端点重叠。
   /// 默认为 0.0。
   final double thumbBarGap;
+
+  /// 滑块周围的间隙，使进度条在滑块处断开为左右两段。
+  ///
+  /// 设为大于 0 的值时，进度条会在滑块两侧留出间隙，视觉上被滑块
+  /// 分成左右两段。每一段的两个端点都会应用圆角（如果设置了
+  /// [barBorderRadius]）或线条端点样式（根据 [barCapShape]）。
+  /// 默认为 0.0（不分段）。
+  final double thumbGap;
 
   /// [progress] 和 [total] 时长文本标签的位置。
   ///
@@ -519,6 +528,7 @@ class _ProgressBarState extends State<ProgressBar>
       thumbShape: widget.thumbShape,
       thumbCustomPainter: widget.thumbCustomPainter,
       thumbBarGap: widget.thumbBarGap,
+      thumbGap: widget.thumbGap,
       isDragging: _userIsDraggingThumb,
       leftLabel: _cachedLeftLabel,
       rightLabel: _cachedRightLabel,

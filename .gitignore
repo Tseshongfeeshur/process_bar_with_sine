@@ -4,6 +4,7 @@
 .pub/
 build/
 pubspec.lock
+CLAUDE.md
 
 # Android / iOS
 *.iml
