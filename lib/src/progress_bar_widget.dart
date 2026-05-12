@@ -567,17 +567,22 @@ class _ProgressBarState extends State<ProgressBar>
         builder: (context, constraints) {
           final tw = widget.thumbWidget;
           if (tw != null) {
-            final thumbOffset = _computeThumbOffset(
-              constraints.maxWidth,
-              desiredHeight,
-            );
             return Stack(
               children: [
                 CustomPaint(painter: painter),
-                Positioned(
-                  left: thumbOffset.dx - widget.thumbRadius,
-                  top: thumbOffset.dy - widget.thumbRadius,
-                  child: tw,
+                ValueListenableBuilder<double>(
+                  valueListenable: _smoothedFraction,
+                  builder: (context, fraction, _) {
+                    final thumbOffset = _computeThumbOffset(
+                      constraints.maxWidth,
+                      desiredHeight,
+                    );
+                    return Positioned(
+                      left: thumbOffset.dx - widget.thumbRadius,
+                      top: thumbOffset.dy - widget.thumbRadius,
+                      child: tw,
+                    );
+                  },
                 ),
               ],
             );

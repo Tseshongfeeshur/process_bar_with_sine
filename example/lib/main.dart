@@ -37,6 +37,7 @@ class _ExamplePageState extends State<ExamplePage> {
   // 演示用的配置
   ThumbShape _thumbShape = ThumbShape.circle;
   bool _sineWaveEnabled = true;
+  bool _useCustomThumb = false;
   double _thumbGap = 0.0;
   double _thumbBarGap = 0.0;
   double _barBorderRadius = 0.0;
@@ -59,6 +60,9 @@ class _ExamplePageState extends State<ExamplePage> {
               thumbShape: _thumbShape,
               thumbGap: _thumbGap,
               thumbBarGap: _thumbBarGap,
+              thumbWidget: _useCustomThumb
+                  ? const _CustomThumb()
+                  : null,
               barBorderRadius: _barBorderRadius > 0 ? _barBorderRadius : null,
               sineWaveConfig: _sineWaveEnabled
                   ? const SineWaveConfig(
@@ -132,6 +136,17 @@ class _ExamplePageState extends State<ExamplePage> {
               onChanged: (v) {
                 setState(() {
                   _sineWaveEnabled = v;
+                });
+              },
+            ),
+
+            // 自定义滑块开关
+            SwitchListTile(
+              title: const Text('自定义滑块 Widget'),
+              value: _useCustomThumb,
+              onChanged: (v) {
+                setState(() {
+                  _useCustomThumb = v;
                 });
               },
             ),
@@ -223,5 +238,32 @@ class _ExamplePageState extends State<ExamplePage> {
       });
       return _isPlaying && _progress < _total && mounted;
     });
+  }
+}
+
+class _CustomThumb extends StatelessWidget {
+  const _CustomThumb();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2.5,
+        ),
+      ),
+    );
   }
 }
