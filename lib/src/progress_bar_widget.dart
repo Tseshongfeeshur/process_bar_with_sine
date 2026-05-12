@@ -147,8 +147,9 @@ class ProgressBar extends StatefulWidget {
 class _ProgressBarState extends State<ProgressBar>
     with TickerProviderStateMixin {
   late _EagerHorizontalDragGestureRecognizer _drag;
-  late double _thumbValue;
-  bool _userIsDraggingThumb = false;
+
+  // 拖拽期间为手指对应的比例值；null 表示未在拖拽，此时由 widget.progress 驱动。
+  double? _dragValue;
 
   AnimationController? _waveController;
 
@@ -161,7 +162,6 @@ class _ProgressBarState extends State<ProgressBar>
   @override
   void initState() {
     super.initState();
-    _thumbValue = _proportionOfTotal(widget.progress);
     _drag = _EagerHorizontalDragGestureRecognizer()
       ..onStart = _onDragStart
       ..onUpdate = _onDragUpdate
@@ -170,13 +170,13 @@ class _ProgressBarState extends State<ProgressBar>
     _initWaveController();
   }
 
+  // 当前有效进度比例：拖拽时取手指位置，否则从 widget.progress 实时计算。
+  double get _effectiveFraction =>
+      _dragValue ?? _proportionOfTotal(widget.progress);
+
   @override
   void didUpdateWidget(covariant ProgressBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    if (!_userIsDraggingThumb) {
-      _thumbValue = _proportionOfTotal(widget.progress);
-    }
 
     if (oldWidget.progress != widget.progress ||
         oldWidget.total != widget.total) {
@@ -222,8 +222,7 @@ class _ProgressBarState extends State<ProgressBar>
   // ---- 手势处理 ----
 
   void _onDragStart(DragStartDetails details) {
-    _userIsDraggingThumb = true;
-    _updateThumbFromLocalPosition(details.localPosition);
+    _dragValue = _fractionFromLocalPosition(details.localPosition);
     widget.onDragStart?.call(ThumbDragDetails(
       timeStamp: _currentThumbDuration(),
       globalPosition: details.globalPosition,
@@ -233,7 +232,7 @@ class _ProgressBarState extends State<ProgressBar>
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
-    _updateThumbFromLocalPosition(details.localPosition);
+    _dragValue = _fractionFromLocalPosition(details.localPosition);
     widget.onDragUpdate?.call(ThumbDragDetails(
       timeStamp: _currentThumbDuration(),
       globalPosition: details.globalPosition,
@@ -249,17 +248,17 @@ class _ProgressBarState extends State<ProgressBar>
   }
 
   void _finishDrag() {
-    _userIsDraggingThumb = false;
-    _thumbValue = _proportionOfTotal(widget.progress);
+    _dragValue = null;
     setState(() {});
   }
 
   Duration _currentThumbDuration() {
-    final ms = _thumbValue * widget.total.inMilliseconds;
-    return Duration(milliseconds: ms.round());
+    final fraction = _effectiveFraction;
+    return Duration(
+        milliseconds: (fraction * widget.total.inMilliseconds).round());
   }
 
-  void _updateThumbFromLocalPosition(Offset localPosition) {
+  double _fractionFromLocalPosition(Offset localPosition) {
     final dx = localPosition.dx;
     double leftInset = 0.0;
     double rightInset = 0.0;
@@ -283,7 +282,7 @@ class _ProgressBarState extends State<ProgressBar>
         context.size!.width - rightInset - capRadius - widget.thumbBarGap;
     final barWidth = barEnd - barStart;
     final position = (dx - barStart).clamp(0.0, barWidth);
-    _thumbValue = barWidth > 0 ? position / barWidth : 0.0;
+    return barWidth > 0 ? position / barWidth : 0.0;
   }
 
   // ---- 标签缓存 ----
@@ -361,16 +360,20 @@ class _ProgressBarState extends State<ProgressBar>
   static const double _semanticActionUnit = 0.05;
 
   void _semanticIncrease() {
-    final newValue = (_thumbValue + _semanticActionUnit).clamp(0.0, 1.0);
-    _thumbValue = newValue;
+    final newFraction =
+        (_effectiveFraction + _semanticActionUnit).clamp(0.0, 1.0);
+    _dragValue = newFraction;
     widget.onSeek?.call(_currentThumbDuration());
+    _dragValue = null;
     setState(() {});
   }
 
   void _semanticDecrease() {
-    final newValue = (_thumbValue - _semanticActionUnit).clamp(0.0, 1.0);
-    _thumbValue = newValue;
+    final newFraction =
+        (_effectiveFraction - _semanticActionUnit).clamp(0.0, 1.0);
+    _dragValue = newFraction;
     widget.onSeek?.call(_currentThumbDuration());
+    _dragValue = null;
     setState(() {});
   }
 
@@ -399,8 +402,10 @@ class _ProgressBarState extends State<ProgressBar>
 
     final desiredHeight = _computeDesiredHeight(resolvedStyle, textScaler);
 
+    final fraction = _effectiveFraction;
+
     final painter = ProgressBarPainter(
-      progressFraction: _thumbValue,
+      progressFraction: fraction,
       bufferedFraction: _proportionOfTotal(buffered),
       barHeight: widget.barHeight,
       baseBarColor: baseBarColor,
@@ -419,7 +424,7 @@ class _ProgressBarState extends State<ProgressBar>
       lineThumbBorderRadius: widget.lineThumbBorderRadius,
       thumbBarGap: widget.thumbBarGap,
       thumbGap: widget.thumbGap,
-      isDragging: _userIsDraggingThumb,
+      isDragging: _dragValue != null,
       leftLabel: _cachedLeftLabel,
       rightLabel: _cachedRightLabel,
       timeLabelLocation:
@@ -430,14 +435,12 @@ class _ProgressBarState extends State<ProgressBar>
       repaint: _waveController,
     );
 
-    final increased =
-        (_thumbValue + _semanticActionUnit).clamp(0.0, 1.0);
-    final decreased =
-        (_thumbValue - _semanticActionUnit).clamp(0.0, 1.0);
+    final increased = (fraction + _semanticActionUnit).clamp(0.0, 1.0);
+    final decreased = (fraction - _semanticActionUnit).clamp(0.0, 1.0);
 
     return Semantics(
       label: '进度条',
-      value: '${(_thumbValue * 100).round()}%',
+      value: '${(fraction * 100).round()}%',
       increasedValue: '${(increased * 100).round()}%',
       decreasedValue: '${(decreased * 100).round()}%',
       onIncrease: _semanticIncrease,

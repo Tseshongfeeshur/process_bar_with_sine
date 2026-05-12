@@ -1,3 +1,7 @@
+## 1.2.3
+
+- **Refactor**: Replaced the `_userIsDraggingThumb` boolean flag with a nullable `_dragValue` override. When `_dragValue` is `null`, the thumb position is always computed live from `widget.progress`, eliminating the risk of a stuck drag state permanently blocking playback tracking.
+
 ## 1.2.2
 
 - **Fix**: The gesture recognizer was missing an `onCancel` binding, causing the internal drag state to be permanently locked to `true` when a drag was terminated abnormally, preventing playback progress from ever driving the thumb again.
