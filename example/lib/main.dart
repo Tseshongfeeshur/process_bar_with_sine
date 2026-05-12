@@ -1,269 +1,255 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:process_bar_with_sine/process_bar_with_sine.dart';
 
-void main() {
-  runApp(const ExampleApp());
-}
+void main() => runApp(const DemoApp());
 
-class ExampleApp extends StatelessWidget {
-  const ExampleApp({super.key});
+class DemoApp extends StatelessWidget {
+  const DemoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '正弦波浪进度条示例',
+      title: 'ProgressBar 增强功能演示',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorSchemeSeed: Colors.blue,
+        brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      home: const ExamplePage(),
+      home: const DemoPage(),
     );
   }
 }
 
-class ExamplePage extends StatefulWidget {
-  const ExamplePage({super.key});
+class DemoPage extends StatefulWidget {
+  const DemoPage({super.key});
 
   @override
-  State<ExamplePage> createState() => _ExamplePageState();
+  State<DemoPage> createState() => _DemoPageState();
 }
 
-class _ExamplePageState extends State<ExamplePage> {
+class _DemoPageState extends State<DemoPage> {
+  static const _totalDuration = Duration(seconds: 30);
+
+  Timer? _timer;
   Duration _progress = Duration.zero;
-  final Duration _total = const Duration(minutes: 5, seconds: 0);
   bool _isPlaying = false;
 
-  // 演示用的配置
   ThumbShape _thumbShape = ThumbShape.circle;
-  bool _sineWaveEnabled = true;
-  bool _useCustomThumb = false;
-  double _thumbGap = 0.0;
-  double _thumbBarGap = 0.0;
-  double _barBorderRadius = 0.0;
+  double _barBorderRadius = 0;
+  double _thumbGap = 0;
+  double _thumbBarGap = 0;
+  bool _enableSineWave = false;
+  double _amplitude = 3.0;
+  double _cycleCount = 2.0;
+  double _speed = 1.0;
+  int _waveCount = 1;
+  bool _clampToBarBounds = false;
+  TimeLabelLocation _timeLabelLocation = TimeLabelLocation.below;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _togglePlay() {
+    if (_isPlaying) {
+      _timer?.cancel();
+    } else {
+      _timer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+        setState(() {
+          _progress += const Duration(milliseconds: 200);
+          if (_progress >= _totalDuration) {
+            _progress = Duration.zero;
+          }
+        });
+      });
+    }
+    setState(() => _isPlaying = !_isPlaying);
+  }
+
+  void _seek(Duration position) {
+    setState(() => _progress = position);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('正弦波浪进度条'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 进度条
-            ProgressBar(
-              progress: _progress,
-              total: _total,
-              thumbShape: _thumbShape,
-              thumbGap: _thumbGap,
-              thumbBarGap: _thumbBarGap,
-              thumbWidget: _useCustomThumb
-                  ? const _CustomThumb()
-                  : null,
-              barBorderRadius: _barBorderRadius > 0 ? _barBorderRadius : null,
-              sineWaveConfig: _sineWaveEnabled
-                  ? const SineWaveConfig(
-                      amplitude: 4.0,
-                      cycleCount: 9.0,
-                      speed: 1.5,
-                    )
-                  : null,
-              onSeek: (duration) {
-                setState(() {
-                  _progress = duration;
-                });
-              },
-              timeLabelLocation: TimeLabelLocation.below,
+      appBar:
+          AppBar(title: const Text('ProgressBar 增强功能演示'), centerTitle: true),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        children: [
+          // ---- 进度条展示区 ----
+          Card(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                children: [
+                  ProgressBar(
+                    progress: _progress,
+                    total: _totalDuration,
+                    buffered: _isPlaying
+                        ? _progress + const Duration(seconds: 8)
+                        : null,
+                    thumbShape: _thumbShape,
+                    barBorderRadius:
+                        _barBorderRadius > 0 ? _barBorderRadius : null,
+                    thumbGap: _thumbGap,
+                    thumbBarGap: _thumbBarGap,
+                    sineWaveConfig:
+                        _enableSineWave ? _buildSineConfig() : null,
+                    timeLabelLocation: _timeLabelLocation,
+                    onSeek: _seek,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow),
+                        onPressed: _togglePlay,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.replay),
+                        onPressed: () =>
+                            setState(() => _progress = Duration.zero),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
+          ),
 
-            // 播放/暂停按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton.filled(
-                  icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                  onPressed: () {
-                    setState(() {
-                      _isPlaying = !_isPlaying;
-                    });
-                    if (_isPlaying) {
-                      _startPlayback();
-                    }
-                  },
-                ),
-                const SizedBox(width: 16),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _progress = Duration.zero;
-                      _isPlaying = false;
-                    });
-                  },
-                  child: const Text('重置'),
-                ),
-              ],
+          const SizedBox(height: 8),
+
+          // ---- 滑块形状 ----
+          _buildSection('滑块形状 (thumbShape)'),
+          SegmentedButton<ThumbShape>(
+            segments: const [
+              ButtonSegment(value: ThumbShape.circle, label: Text('circle')),
+              ButtonSegment(value: ThumbShape.line, label: Text('line')),
+            ],
+            selected: {_thumbShape},
+            onSelectionChanged: (v) => setState(() => _thumbShape = v.first),
+          ),
+
+          // ---- 时间标签位置 ----
+          _buildSection('时间标签位置 (timeLabelLocation)'),
+          SegmentedButton<TimeLabelLocation>(
+            segments: const [
+              ButtonSegment(
+                  value: TimeLabelLocation.below, label: Text('below')),
+              ButtonSegment(
+                  value: TimeLabelLocation.above, label: Text('above')),
+              ButtonSegment(
+                  value: TimeLabelLocation.sides, label: Text('sides')),
+              ButtonSegment(
+                  value: TimeLabelLocation.none, label: Text('none')),
+            ],
+            selected: {_timeLabelLocation},
+            onSelectionChanged: (v) =>
+                setState(() => _timeLabelLocation = v.first),
+          ),
+
+          // ---- 圆角半径 ----
+          _buildSection(
+              '进度条圆角 (barBorderRadius): ${_barBorderRadius.toStringAsFixed(1)}'),
+          Slider(
+            value: _barBorderRadius,
+            min: 0,
+            max: 16,
+            onChanged: (v) => setState(() => _barBorderRadius = v),
+          ),
+
+          // ---- 滑块间隙 ----
+          _buildSection('滑块分段间隙 (thumbGap): ${_thumbGap.toStringAsFixed(1)}'),
+          Slider(
+            value: _thumbGap,
+            min: 0,
+            max: 16,
+            onChanged: (v) => setState(() => _thumbGap = v),
+          ),
+
+          _buildSection(
+              '滑块端点间隙 (thumbBarGap): ${_thumbBarGap.toStringAsFixed(1)}'),
+          Slider(
+            value: _thumbBarGap,
+            min: -4,
+            max: 12,
+            onChanged: (v) => setState(() => _thumbBarGap = v),
+          ),
+
+          // ---- 正弦波浪 ----
+          SwitchListTile(
+            title: const Text('启用正弦波浪 (sineWaveConfig)'),
+            value: _enableSineWave,
+            onChanged: (v) => setState(() => _enableSineWave = v),
+          ),
+
+          if (_enableSineWave) ...[
+            _buildSection('振幅 (amplitude): ${_amplitude.toStringAsFixed(1)}'),
+            Slider(
+              value: _amplitude,
+              min: 1,
+              max: 8,
+              onChanged: (v) => setState(() => _amplitude = v),
             ),
-            const SizedBox(height: 32),
-
-            // 配置控件
-            const Text('滑块形状', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: ThumbShape.values.map((shape) {
-                final isSelected = _thumbShape == shape;
-                return ChoiceChip(
-                  label: Text(shape.name),
-                  selected: isSelected,
-                  onSelected: (_) {
-                    setState(() {
-                      _thumbShape = shape;
-                    });
-                  },
-                );
-              }).toList(),
+            _buildSection('周期数 (cycleCount): ${_cycleCount.toStringAsFixed(1)}'),
+            Slider(
+              value: _cycleCount,
+              min: 0.5,
+              max: 6,
+              onChanged: (v) => setState(() => _cycleCount = v),
             ),
-            const SizedBox(height: 16),
-
-            // 波浪开关
+            _buildSection('速度 (speed): ${_speed.toStringAsFixed(1)}'),
+            Slider(
+              value: _speed,
+              min: 0.2,
+              max: 3,
+              onChanged: (v) => setState(() => _speed = v),
+            ),
+            _buildSection('叠加层数 (waveCount): $_waveCount'),
+            Slider(
+              value: _waveCount.toDouble(),
+              min: 1,
+              max: 4,
+              divisions: 3,
+              onChanged: (v) => setState(() => _waveCount = v.round()),
+            ),
             SwitchListTile(
-              title: const Text('正弦波浪动画'),
-              value: _sineWaveEnabled,
-              onChanged: (v) {
-                setState(() {
-                  _sineWaveEnabled = v;
-                });
-              },
-            ),
-
-            // 自定义滑块开关
-            SwitchListTile(
-              title: const Text('自定义滑块 Widget'),
-              value: _useCustomThumb,
-              onChanged: (v) {
-                setState(() {
-                  _useCustomThumb = v;
-                });
-              },
-            ),
-            const SizedBox(height: 8),
-
-            // 滑块分段间隙
-            Row(
-              children: [
-                const Text('分段间隙'),
-                Expanded(
-                  child: Slider(
-                    value: _thumbGap,
-                    min: 0,
-                    max: 30,
-                    divisions: 30,
-                    label: _thumbGap.toStringAsFixed(0),
-                    onChanged: (v) {
-                      setState(() {
-                        _thumbGap = v;
-                      });
-                    },
-                  ),
-                ),
-                Text(_thumbGap.toStringAsFixed(0)),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // 端点间隙滑块
-            Row(
-              children: [
-                const Text('滑块间隙'),
-                Expanded(
-                  child: Slider(
-                    value: _thumbBarGap,
-                    min: 0,
-                    max: 20,
-                    divisions: 20,
-                    label: _thumbBarGap.toStringAsFixed(0),
-                    onChanged: (v) {
-                      setState(() {
-                        _thumbBarGap = v;
-                      });
-                    },
-                  ),
-                ),
-                Text(_thumbBarGap.toStringAsFixed(0)),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // 圆角滑块
-            Row(
-              children: [
-                const Text('进度条圆角'),
-                Expanded(
-                  child: Slider(
-                    value: _barBorderRadius,
-                    min: 0,
-                    max: 20,
-                    divisions: 20,
-                    label: _barBorderRadius.toStringAsFixed(0),
-                    onChanged: (v) {
-                      setState(() {
-                        _barBorderRadius = v;
-                      });
-                    },
-                  ),
-                ),
-                Text(_barBorderRadius.toStringAsFixed(0)),
-              ],
+              title: const Text('裁剪到边界 (clampToBarBounds)'),
+              value: _clampToBarBounds,
+              onChanged: (v) => setState(() => _clampToBarBounds = v),
             ),
           ],
-        ),
+
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
 
-  void _startPlayback() {
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (!_isPlaying || !mounted) return false;
-      setState(() {
-        if (_progress < _total) {
-          _progress += const Duration(milliseconds: 100);
-        } else {
-          _isPlaying = false;
-        }
-      });
-      return _isPlaying && _progress < _total && mounted;
-    });
+  SineWaveConfig _buildSineConfig() {
+    return SineWaveConfig(
+      amplitude: _amplitude,
+      cycleCount: _cycleCount,
+      speed: _speed,
+      waveCount: _waveCount,
+      clampToBarBounds: _clampToBarBounds,
+    );
   }
-}
 
-class _CustomThumb extends StatelessWidget {
-  const _CustomThumb();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary,
-          width: 2.5,
-        ),
-      ),
+  Widget _buildSection(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
     );
   }
 }

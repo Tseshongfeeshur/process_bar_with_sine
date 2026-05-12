@@ -1,8 +1,7 @@
 /// 将 [Duration] 格式化为时间字符串。
 ///
-/// 格式规则：
-/// - 小于一小时：`mm:ss`（分钟不补零，秒数补零到两位）
-/// - 大于等于一小时：`h:mm:ss`（小时不补零，分钟和秒数补零到两位）
+/// 小于一小时：`mm:ss`（分钟不补零，秒数补零到两位）。
+/// 大于等于一小时：`h:mm:ss`。
 String formatDuration(Duration time) {
   final minutes =
       time.inMinutes.remainder(Duration.minutesPerHour).toString();
