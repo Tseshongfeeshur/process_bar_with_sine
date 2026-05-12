@@ -1,3 +1,7 @@
+## 1.2.1
+
+- **修复**：手势识别器缺少 `onCancel` 绑定，导致某些拖拽终止方式（如手指无水平位移即抬起）使内部拖拽状态永久锁死为 `true`，播放进度无法再驱动滑块移动
+
 ## 1.2.0
 
 - **重构**：将 `LeafRenderObjectWidget` 重写为 `StatefulWidget` + `CustomPainter` 架构
