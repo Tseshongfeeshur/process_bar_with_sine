@@ -47,6 +47,9 @@ class _DemoPageState extends State<DemoPage> {
   double _speed = 1.0;
   int _waveCount = 1;
   bool _clampToBarBounds = false;
+  double _lineThumbWidth = 4.0;
+  double _lineThumbHeight = 14.0;
+  double _lineThumbBorderRadius = 2.0;
   TimeLabelLocation _timeLabelLocation = TimeLabelLocation.below;
 
   @override
@@ -97,6 +100,9 @@ class _DemoPageState extends State<DemoPage> {
                         ? _progress + const Duration(seconds: 8)
                         : null,
                     thumbShape: _thumbShape,
+                    lineThumbWidth: _lineThumbWidth,
+                    lineThumbHeight: _lineThumbHeight,
+                    lineThumbBorderRadius: _lineThumbBorderRadius,
                     barBorderRadius:
                         _barBorderRadius > 0 ? _barBorderRadius : null,
                     thumbGap: _thumbGap,
@@ -139,6 +145,30 @@ class _DemoPageState extends State<DemoPage> {
             selected: {_thumbShape},
             onSelectionChanged: (v) => setState(() => _thumbShape = v.first),
           ),
+
+          if (_thumbShape == ThumbShape.line) ...[
+            _buildSection('线宽 (lineThumbWidth): ${_lineThumbWidth.toStringAsFixed(1)}'),
+            Slider(
+              value: _lineThumbWidth,
+              min: 2,
+              max: 12,
+              onChanged: (v) => setState(() => _lineThumbWidth = v),
+            ),
+            _buildSection('线高 (lineThumbHeight): ${_lineThumbHeight.toStringAsFixed(1)}'),
+            Slider(
+              value: _lineThumbHeight,
+              min: 6,
+              max: 32,
+              onChanged: (v) => setState(() => _lineThumbHeight = v),
+            ),
+            _buildSection('圆角 (lineThumbBorderRadius): ${_lineThumbBorderRadius.toStringAsFixed(1)}'),
+            Slider(
+              value: _lineThumbBorderRadius,
+              min: 0,
+              max: 6,
+              onChanged: (v) => setState(() => _lineThumbBorderRadius = v),
+            ),
+          ],
 
           // ---- 时间标签位置 ----
           _buildSection('时间标签位置 (timeLabelLocation)'),

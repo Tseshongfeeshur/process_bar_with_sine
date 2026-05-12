@@ -31,4 +31,26 @@ class SineWaveConfig {
 
   /// 是否将波浪裁剪到进度条边界内。
   final bool clampToBarBounds;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SineWaveConfig &&
+        other.amplitude == amplitude &&
+        other.cycleCount == cycleCount &&
+        other.speed == speed &&
+        other.waveColor == waveColor &&
+        other.waveCount == waveCount &&
+        other.clampToBarBounds == clampToBarBounds;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        amplitude,
+        cycleCount,
+        speed,
+        waveColor,
+        waveCount,
+        clampToBarBounds,
+      );
 }

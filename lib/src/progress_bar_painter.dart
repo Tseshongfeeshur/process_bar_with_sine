@@ -25,6 +25,9 @@ class ProgressBarPainter extends CustomPainter {
     required this.thumbGlowRadius,
     required this.thumbCanPaintOutsideBar,
     required this.thumbShape,
+    this.lineThumbWidth = 4.0,
+    this.lineThumbHeight = 14.0,
+    this.lineThumbBorderRadius = 2.0,
     required this.thumbBarGap,
     required this.thumbGap,
     required this.isDragging,
@@ -79,6 +82,15 @@ class ProgressBarPainter extends CustomPainter {
   /// 滑块形状。
   final ThumbShape thumbShape;
 
+  /// line 形状滑块的宽度。默认 4.0。
+  final double lineThumbWidth;
+
+  /// line 形状滑块的高度。默认 14.0。
+  final double lineThumbHeight;
+
+  /// line 形状滑块的圆角半径。默认 2.0。
+  final double lineThumbBorderRadius;
+
   /// 进度条端点与滑块之间的视觉间隙。
   final double thumbBarGap;
 
@@ -105,12 +117,6 @@ class ProgressBarPainter extends CustomPainter {
 
   /// 波浪动画驱动器，在 [paint] 中读取当前值以确保动画帧间相位更新。
   final Animation<double>? waveAnimation;
-
-  /// line 形状滑块的宽度。
-  static const double _lineThumbWidth = 4.0;
-
-  /// line 形状滑块的高度。
-  static const double _lineThumbHeight = 14.0;
 
   double get _defaultSidePadding {
     const minPadding = 5.0;
@@ -442,11 +448,11 @@ class ProgressBarPainter extends CustomPainter {
         canvas.drawCircle(center, thumbRadius, thumbPaint);
       case ThumbShape.line:
         final rect = RRect.fromLTRBR(
-          center.dx - _lineThumbWidth / 2,
-          center.dy - _lineThumbHeight / 2,
-          center.dx + _lineThumbWidth / 2,
-          center.dy + _lineThumbHeight / 2,
-          const Radius.circular(2),
+          center.dx - lineThumbWidth / 2,
+          center.dy - lineThumbHeight / 2,
+          center.dx + lineThumbWidth / 2,
+          center.dy + lineThumbHeight / 2,
+          Radius.circular(lineThumbBorderRadius),
         );
         canvas.drawRRect(rect, thumbPaint);
     }
@@ -468,6 +474,9 @@ class ProgressBarPainter extends CustomPainter {
         oldDelegate.thumbGlowRadius != thumbGlowRadius ||
         oldDelegate.thumbCanPaintOutsideBar != thumbCanPaintOutsideBar ||
         oldDelegate.thumbShape != thumbShape ||
+        oldDelegate.lineThumbWidth != lineThumbWidth ||
+        oldDelegate.lineThumbHeight != lineThumbHeight ||
+        oldDelegate.lineThumbBorderRadius != lineThumbBorderRadius ||
         oldDelegate.thumbBarGap != thumbBarGap ||
         oldDelegate.thumbGap != thumbGap ||
         oldDelegate.isDragging != isDragging ||

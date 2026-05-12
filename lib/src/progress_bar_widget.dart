@@ -40,6 +40,9 @@ class ProgressBar extends StatefulWidget {
     this.thumbGlowRadius = 30.0,
     this.thumbCanPaintOutsideBar = true,
     this.thumbShape = ThumbShape.circle,
+    this.lineThumbWidth = 4.0,
+    this.lineThumbHeight = 14.0,
+    this.lineThumbBorderRadius = 2.0,
     this.thumbBarGap = 0.0,
     this.thumbGap = 0.0,
     this.timeLabelLocation,
@@ -106,6 +109,15 @@ class ProgressBar extends StatefulWidget {
 
   /// 滑块的视觉形状。默认 [ThumbShape.circle]。
   final ThumbShape thumbShape;
+
+  /// line 形状滑块的宽度。默认 4.0。
+  final double lineThumbWidth;
+
+  /// line 形状滑块的高度。默认 14.0。
+  final double lineThumbHeight;
+
+  /// line 形状滑块的圆角半径。默认 2.0。
+  final double lineThumbBorderRadius;
 
   /// 进度条端点与滑块之间的视觉间隙。默认 0.0。
   final double thumbBarGap;
@@ -399,6 +411,9 @@ class _ProgressBarState extends State<ProgressBar>
       thumbGlowRadius: widget.thumbGlowRadius,
       thumbCanPaintOutsideBar: widget.thumbCanPaintOutsideBar,
       thumbShape: widget.thumbShape,
+      lineThumbWidth: widget.lineThumbWidth,
+      lineThumbHeight: widget.lineThumbHeight,
+      lineThumbBorderRadius: widget.lineThumbBorderRadius,
       thumbBarGap: widget.thumbBarGap,
       thumbGap: widget.thumbGap,
       isDragging: _userIsDraggingThumb,
