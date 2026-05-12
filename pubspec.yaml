@@ -1,5 +1,6 @@
 name: process_bar_with_sine
 description: An enhanced Flutter progress bar library following Material Design 3, featuring dynamic sine-wave animations. It offers deep customization for thumb shapes and track styles, delivering a fluid and personalized interactive experience.
+repository: https://github.com/Tseshongfeeshur/process_bar_with_sine
 version: 1.0.0
 
 environment:
