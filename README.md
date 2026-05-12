@@ -7,6 +7,7 @@ An enhanced Flutter progress bar widget with dynamic sine-wave animations. Desig
 ## Original Repo
 
 [audio_video_progress_bar](https://github.com/suragch/audio_video_progress_bar)
+
 Copyright (c) suragch
 
 ## Features
