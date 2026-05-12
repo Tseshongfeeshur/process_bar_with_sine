@@ -12,6 +12,7 @@ import 'sine_wave_config.dart';
 class ProgressBarPainter extends CustomPainter {
   ProgressBarPainter({
     required this.progressFraction,
+    this.smoothedFraction,
     required this.bufferedFraction,
     required this.barHeight,
     required this.baseBarColor,
@@ -28,6 +29,7 @@ class ProgressBarPainter extends CustomPainter {
     this.thumbCustomPainter,
     required this.thumbBarGap,
     required this.thumbGap,
+    required this.showDefaultThumb,
     required this.isDragging,
     this.leftLabel,
     this.rightLabel,
@@ -40,6 +42,9 @@ class ProgressBarPainter extends CustomPainter {
 
   /// 当前进度在总时长中的比例 (0.0 ~ 1.0)。
   final double progressFraction;
+
+  /// 平滑后的进度值，在播放时渐进逼近 [progressFraction]，减少抖动。
+  final ValueNotifier<double>? smoothedFraction;
 
   /// 缓冲进度在总时长中的比例 (0.0 ~ 1.0)。
   final double bufferedFraction;
@@ -89,6 +94,9 @@ class ProgressBarPainter extends CustomPainter {
   /// 滑块周围的间隙，使进度条在滑块处断开为左右两段。
   final double thumbGap;
 
+  /// 是否绘制内置滑块。当使用自定义 thumbWidget 时为 false。
+  final bool showDefaultThumb;
+
   /// 用户当前是否正在拖拽滑块。
   final bool isDragging;
 
@@ -109,6 +117,12 @@ class ProgressBarPainter extends CustomPainter {
 
   /// 波浪动画驱动器，在 [paint] 中读取当前值以确保动画帧间相位更新。
   final Animation<double>? waveAnimation;
+
+  /// 实际渲染用的进度比例：拖拽时用原始值，播放时用平滑渐进值。
+  double get _effectiveFraction {
+    if (isDragging || smoothedFraction == null) return progressFraction;
+    return smoothedFraction!.value.clamp(0.0, 1.0);
+  }
 
   /// 当标签在两侧时，进度条与标签之间的默认间距。
   double get _defaultSidePadding {
@@ -245,25 +259,25 @@ class ProgressBarPainter extends CustomPainter {
     final inset = capRadius + thumbBarGap;
     final adjustedWidth = barPaintSize.width - inset * 2;
 
-    if (config2 != null && config2.amplitude > 0 && progressFraction > 0) {
+    if (config2 != null && config2.amplitude > 0 && _effectiveFraction > 0) {
       // 波浪模式：已走部分只绘制正弦曲线，后方绘制平直底色条和缓冲条
       final wavePhase = (waveAnimation?.value ?? 0.0) * 2 * pi;
 
       double waveEndX;
       double remainingStartX;
-      if (thumbGap > 0 && progressFraction < 1.0) {
-        final thumbCenterX = inset + adjustedWidth * progressFraction;
+      if (thumbGap > 0 && _effectiveFraction < 1.0) {
+        final thumbCenterX = inset + adjustedWidth * _effectiveFraction;
         waveEndX = (thumbCenterX - thumbRadius - thumbGap).clamp(inset, barPaintSize.width);
         remainingStartX = thumbCenterX + thumbRadius + thumbGap;
       } else {
-        waveEndX = inset + adjustedWidth * progressFraction;
+        waveEndX = inset + adjustedWidth * _effectiveFraction;
         remainingStartX = waveEndX;
       }
 
       _drawProgressBarWithWave(canvas, barPaintSize, config2, wavePhase, waveEndX);
 
       // 绘制已走部分后方的剩余底色条
-      if (progressFraction < 1.0) {
+      if (_effectiveFraction < 1.0) {
         final halfH = barHeight / 2;
         canvas.save();
         canvas.clipRect(Rect.fromLTRB(
@@ -280,7 +294,9 @@ class ProgressBarPainter extends CustomPainter {
       _drawProgressBar(canvas, barPaintSize);
     }
 
-    _drawThumb(canvas, barPaintSize);
+    if (showDefaultThumb) {
+      _drawThumb(canvas, barPaintSize);
+    }
 
     canvas.restore();
   }
@@ -310,7 +326,7 @@ class ProgressBarPainter extends CustomPainter {
     _drawBarSegment(
       canvas: canvas,
       availableSize: availableSize,
-      widthProportion: progressFraction,
+      widthProportion: _effectiveFraction,
       color: progressBarColor,
     );
   }
@@ -331,9 +347,9 @@ class ProgressBarPainter extends CustomPainter {
 
     final fullEnd = inset + adjustedWidth * widthProportion;
 
-    if (thumbGap > 0 && progressFraction > 0 && progressFraction < 1.0) {
+    if (thumbGap > 0 && _effectiveFraction > 0 && _effectiveFraction < 1.0) {
       // 在滑块位置断开为左右两段
-      final thumbCenterX = inset + adjustedWidth * progressFraction;
+      final thumbCenterX = inset + adjustedWidth * _effectiveFraction;
       final gapStart = thumbCenterX - thumbRadius - thumbGap;
       final gapEnd = thumbCenterX + thumbRadius + thumbGap;
 
@@ -391,7 +407,7 @@ class ProgressBarPainter extends CustomPainter {
   /// 绘制带正弦波浪的进度条已走部分。
   /// 以与进度条等粗细的描边曲线绘制正弦波。
   void _drawProgressBarWithWave(Canvas canvas, Size availableSize, SineWaveConfig config, double wavePhase, double endX) {
-    if (progressFraction <= 0) return;
+    if (_effectiveFraction <= 0) return;
     final capRadius =
         barCapShape == BarCapShape.round ? barHeight / 2 : 0.0;
     final inset = capRadius + thumbBarGap;
@@ -423,8 +439,7 @@ class ProgressBarPainter extends CustomPainter {
           sin(phaseOffset + wavePhase) * config.amplitude;
       path.moveTo(barLeft, startY);
 
-      // 以 4px 步长采样正弦波，在 60fps 下视觉上已足够平滑
-      const step = 4.0;
+      final step = max(1.5, barHeight / 4);
       for (double x = barLeft + step; x <= progressRight + step; x += step) {
         final clampedX = x > progressRight ? progressRight : x;
         final waveY = centerY +
@@ -457,7 +472,7 @@ class ProgressBarPainter extends CustomPainter {
     final inset = capRadius + thumbBarGap;
     final adjustedWidth = availableSize.width - inset * 2;
 
-    var thumbDx = progressFraction * adjustedWidth + inset;
+    var thumbDx = _effectiveFraction * adjustedWidth + inset;
     if (!thumbCanPaintOutsideBar) {
       thumbDx = thumbDx.clamp(thumbRadius, availableSize.width - thumbRadius);
     }
@@ -539,6 +554,7 @@ class ProgressBarPainter extends CustomPainter {
         oldDelegate.thumbShape != thumbShape ||
         oldDelegate.thumbBarGap != thumbBarGap ||
         oldDelegate.thumbGap != thumbGap ||
+        oldDelegate.showDefaultThumb != showDefaultThumb ||
         oldDelegate.isDragging != isDragging ||
         oldDelegate.leftLabel != leftLabel ||
         oldDelegate.rightLabel != rightLabel ||

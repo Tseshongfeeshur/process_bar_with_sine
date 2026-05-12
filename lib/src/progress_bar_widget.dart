@@ -49,6 +49,7 @@ class ProgressBar extends StatefulWidget {
     this.thumbCustomPainter,
     this.thumbBarGap = 0.0,
     this.thumbGap = 0.0,
+    this.thumbWidget,
     this.timeLabelLocation,
     this.timeLabelType,
     this.timeLabelTextStyle,
@@ -190,6 +191,13 @@ class ProgressBar extends StatefulWidget {
   /// 默认为 0.0（不分段）。
   final double thumbGap;
 
+  /// 自定义滑块组件。
+  ///
+  /// 当非 `null` 时，以此 Widget 替代内置的滑块绘制。
+  /// Widget 的尺寸由外部决定（建议尺寸为 `thumbRadius * 2`）。
+  /// 默认为 `null`（使用内置滑块绘制）。
+  final Widget? thumbWidget;
+
   /// [progress] 和 [total] 时长文本标签的位置。
   ///
   /// 默认标签显示在进度条下方，但你也可以将它们放在上方、两侧或完全移除。
@@ -233,12 +241,16 @@ class _ProgressBarState extends State<ProgressBar>
   TextPainter? _cachedLeftLabel;
   TextPainter? _cachedRightLabel;
 
+  // 平滑进度值，在动画帧间渐进逼近目标，减少播放时抖动
+  final ValueNotifier<double> _smoothedFraction = ValueNotifier(0.0);
+
   // ---- 动画生命周期 ----
 
   @override
   void initState() {
     super.initState();
     _thumbValue = _proportionOfTotal(widget.progress);
+    _smoothedFraction.value = _thumbValue;
     _drag = _EagerHorizontalDragGestureRecognizer()
       ..onStart = _onDragStart
       ..onUpdate = _onDragUpdate
@@ -255,9 +267,9 @@ class _ProgressBarState extends State<ProgressBar>
       _thumbValue = _proportionOfTotal(widget.progress);
     }
 
-    // 标签文本长度变化时清除缓存
-    if (_labelLengthDifferent(oldWidget.progress, widget.progress) ||
-        _labelLengthDifferent(oldWidget.total, widget.total)) {
+    // 进度或总时长变化时清除标签缓存，确保文字标签同步更新
+    if (oldWidget.progress != widget.progress ||
+        oldWidget.total != widget.total) {
       _clearLabelCache();
     }
 
@@ -279,6 +291,7 @@ class _ProgressBarState extends State<ProgressBar>
   @override
   void dispose() {
     _waveController?.dispose();
+    _smoothedFraction.dispose();
     _drag.dispose();
     super.dispose();
   }
@@ -290,7 +303,19 @@ class _ProgressBarState extends State<ProgressBar>
       _waveController = AnimationController(
         vsync: this,
         duration: _waveDuration,
-      )..repeat();
+      )
+        ..addListener(_onWaveTick)
+        ..repeat();
+    }
+  }
+
+  void _onWaveTick() {
+    if (_userIsDraggingThumb) return;
+    final diff = _thumbValue - _smoothedFraction.value;
+    if (diff.abs() < 0.0005) {
+      _smoothedFraction.value = _thumbValue;
+    } else {
+      _smoothedFraction.value += diff * 0.35;
     }
   }
 
@@ -405,15 +430,6 @@ class _ProgressBarState extends State<ProgressBar>
     return tp;
   }
 
-  bool _labelLengthDifferent(Duration first, Duration second) {
-    return (first.inMinutes < 10 && second.inMinutes >= 10) ||
-        (first.inMinutes >= 10 && second.inMinutes < 10) ||
-        (first.inHours == 0 && second.inHours != 0) ||
-        (first.inHours != 0 && second.inHours == 0) ||
-        (first.inHours < 10 && second.inHours >= 10) ||
-        (first.inHours >= 10 && second.inHours < 10);
-  }
-
   static const TimeLabelLocation defaultTimeLabelLocation =
       TimeLabelLocation.below;
 
@@ -513,6 +529,7 @@ class _ProgressBarState extends State<ProgressBar>
 
     final painter = ProgressBarPainter(
       progressFraction: _thumbValue,
+      smoothedFraction: _smoothedFraction,
       bufferedFraction: _proportionOfTotal(buffered),
       barHeight: widget.barHeight,
       baseBarColor: baseBarColor,
@@ -530,6 +547,7 @@ class _ProgressBarState extends State<ProgressBar>
       thumbBarGap: widget.thumbBarGap,
       thumbGap: widget.thumbGap,
       isDragging: _userIsDraggingThumb,
+      showDefaultThumb: widget.thumbWidget == null,
       leftLabel: _cachedLeftLabel,
       rightLabel: _cachedRightLabel,
       timeLabelLocation: widget.timeLabelLocation ?? defaultTimeLabelLocation,
@@ -542,6 +560,33 @@ class _ProgressBarState extends State<ProgressBar>
     final increased = (_thumbValue + _semanticActionUnit).clamp(0.0, 1.0);
     final decreased = (_thumbValue - _semanticActionUnit).clamp(0.0, 1.0);
 
+    final coreChild = SizedBox(
+      width: double.infinity,
+      height: desiredHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tw = widget.thumbWidget;
+          if (tw != null) {
+            final thumbOffset = _computeThumbOffset(
+              constraints.maxWidth,
+              desiredHeight,
+            );
+            return Stack(
+              children: [
+                CustomPaint(painter: painter),
+                Positioned(
+                  left: thumbOffset.dx - widget.thumbRadius,
+                  top: thumbOffset.dy - widget.thumbRadius,
+                  child: tw,
+                ),
+              ],
+            );
+          }
+          return CustomPaint(painter: painter);
+        },
+      ),
+    );
+
     return Semantics(
       label: '进度条',
       value: '${(_thumbValue * 100).round()}%',
@@ -551,15 +596,60 @@ class _ProgressBarState extends State<ProgressBar>
       onDecrease: _semanticDecrease,
       child: Listener(
         onPointerDown: _handlePointerDown,
-        child: SizedBox(
-          width: double.infinity,
-          height: desiredHeight,
-          child: CustomPaint(
-            painter: painter,
-          ),
-        ),
+        child: coreChild,
       ),
     );
+  }
+
+  Offset _computeThumbOffset(double totalWidth, double totalHeight) {
+    final capRadius =
+        widget.barCapShape == BarCapShape.round ? widget.barHeight / 2 : 0.0;
+    final inset = capRadius + widget.thumbBarGap;
+
+    double barLeft = 0.0;
+    double barTop = 0.0;
+    double barWidth = totalWidth;
+
+    final loc = widget.timeLabelLocation ?? defaultTimeLabelLocation;
+    final labelHeight = _cachedLeftLabel?.height ?? 0.0;
+
+    switch (loc) {
+      case TimeLabelLocation.above:
+        barTop = labelHeight + widget.timeLabelPadding;
+        break;
+      case TimeLabelLocation.below:
+        barTop = 0.0;
+        break;
+      case TimeLabelLocation.sides:
+        final leftLabelWidth = _cachedLeftLabel?.width ?? 0.0;
+        final rightLabelWidth = _cachedRightLabel?.width ?? 0.0;
+        final sidePad = widget.thumbCanPaintOutsideBar
+            ? widget.thumbRadius + 5.0
+            : 5.0;
+        barLeft = leftLabelWidth + sidePad + widget.timeLabelPadding;
+        barWidth = totalWidth -
+            2 * sidePad -
+            2 * widget.timeLabelPadding -
+            leftLabelWidth -
+            rightLabelWidth;
+        barTop = totalHeight / 2 - _computeBarAreaHeight() / 2;
+        break;
+      case TimeLabelLocation.none:
+        barTop = totalHeight / 2 - _computeBarAreaHeight() / 2;
+        break;
+    }
+
+    final barAreaHeight = _computeBarAreaHeight();
+    final swConfig = widget.sineWaveConfig;
+    final waveOverflow = (swConfig != null && !swConfig.clampToBarBounds)
+        ? swConfig.amplitude
+        : 0.0;
+
+    final adjustedWidth = barWidth - inset * 2;
+    final thumbDx = barLeft + inset + adjustedWidth * _smoothedFraction.value;
+    final thumbDy = barTop + waveOverflow + barAreaHeight / 2;
+
+    return Offset(thumbDx, thumbDy);
   }
 
   void _handlePointerDown(PointerDownEvent event) {
