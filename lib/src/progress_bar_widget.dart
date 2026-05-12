@@ -165,7 +165,8 @@ class _ProgressBarState extends State<ProgressBar>
     _drag = _EagerHorizontalDragGestureRecognizer()
       ..onStart = _onDragStart
       ..onUpdate = _onDragUpdate
-      ..onEnd = _onDragEnd;
+      ..onEnd = _onDragEnd
+      ..onCancel = _finishDrag;
     _initWaveController();
   }
 
