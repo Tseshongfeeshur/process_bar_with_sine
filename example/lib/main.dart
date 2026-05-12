@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:process_bar_with_sine/progress_bar.dart';
+import 'package:process_bar_with_sine/process_bar_with_sine.dart';
 
 void main() {
   runApp(const ExampleApp());
