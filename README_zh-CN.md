@@ -4,6 +4,12 @@
 
 [English](README.md)
 
+## 源项目
+
+[audio_video_progress_bar](https://github.com/suragch/audio_video_progress_bar)
+
+Copyright (c) suragch
+
 ## 特性
 
 - **正弦波浪动画** -- 已走部分以流动的正弦波浪填充（Material Design 3 / Android 媒体通知风格）
