@@ -250,6 +250,7 @@ class _ProgressBarState extends State<ProgressBar>
 
   void _finishDrag() {
     _userIsDraggingThumb = false;
+    _thumbValue = _proportionOfTotal(widget.progress);
     setState(() {});
   }
 
@@ -351,7 +352,8 @@ class _ProgressBarState extends State<ProgressBar>
 
   double _proportionOfTotal(Duration duration) {
     if (widget.total.inMilliseconds == 0) return 0.0;
-    return duration.inMilliseconds / widget.total.inMilliseconds;
+    return (duration.inMilliseconds / widget.total.inMilliseconds)
+        .clamp(0.0, 1.0);
   }
 
   // ---- 无障碍 ----
