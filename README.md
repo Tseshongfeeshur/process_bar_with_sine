@@ -4,6 +4,11 @@ An enhanced Flutter progress bar widget with dynamic sine-wave animations. Desig
 
 [中文文档](README_zh-CN.md)
 
+## Original Repo
+
+[audio_video_progress_bar](https://github.com/suragch/audio_video_progress_bar)
+Copyright (c) suragch
+
 ## Features
 
 - **Sine wave animation** -- animated sine wave fills the played portion of the progress bar (Material Design 3 / Android media notification style)
