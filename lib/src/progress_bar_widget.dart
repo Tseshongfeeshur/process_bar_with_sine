@@ -183,15 +183,23 @@ class _ProgressBarState extends State<ProgressBar>
       _clearLabelCache();
     }
 
-    if (oldWidget.sineWaveConfig != widget.sineWaveConfig) {
-      _waveController?.dispose();
-      _waveController = null;
-      _initWaveController();
-    } else if (oldWidget.sineWaveConfig?.speed !=
-        widget.sineWaveConfig?.speed) {
-      final newDuration = _waveDuration;
-      if (_waveController?.duration != newDuration) {
-        _waveController?.duration = newDuration;
+    // 仅变更速度或创建/移除配置时才重建动画控制器，避免修改振幅等参数时动画跳归
+    final newConfig = widget.sineWaveConfig;
+    final oldConfig = oldWidget.sineWaveConfig;
+    if (newConfig != oldConfig) {
+      // 配置从无到有或从有到无
+      if ((newConfig == null) != (oldConfig == null)) {
+        _waveController?.dispose();
+        _waveController = null;
+        _initWaveController();
+      } else if (newConfig != null && oldConfig != null) {
+        // 两者均非 null：仅速度变化时调整 duration
+        if (newConfig.speed != oldConfig.speed) {
+          final newDuration = _waveDuration;
+          if (_waveController?.duration != newDuration) {
+            _waveController?.duration = newDuration;
+          }
+        }
       }
     }
   }

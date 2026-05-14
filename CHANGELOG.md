@@ -1,3 +1,8 @@
+## 1.2.5
+
+- **Fix**: Reverted the wave path endpoint normalization introduced in 1.2.4, which caused a visible protrusion and clipping at the start of the wave.
+- **Fix**: Changing any `SineWaveConfig` property (e.g. `amplitude`, `cycleCount`) would recreate the `AnimationController` and reset the wave phase. Now only `speed` changes adjust the controller duration; other properties no longer restart the animation.
+
 ## 1.2.4
 
 - **Add**: `reservedAmplitude` parameter on `SineWaveConfig`. When set, the component height is always calculated using the larger of `amplitude` and `reservedAmplitude`, preventing the bar from changing height when the actual wave amplitude is adjusted.

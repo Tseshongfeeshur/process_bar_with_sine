@@ -395,11 +395,9 @@ class ProgressBarPainter extends CustomPainter {
         ..strokeCap = strokeCap;
 
       final path = Path();
-      // 从中心线出发，保证两端的 strokeCap 朝向水平，与平直进度条等长
-      path.moveTo(barLeft, centerY);
       final startY = centerY +
           sin(phaseOffset + wavePhase) * config.amplitude;
-      path.lineTo(barLeft, startY);
+      path.moveTo(barLeft, startY);
 
       final step = max(1.5, barHeight / 4);
       for (double x = barLeft + step; x <= progressRight + step; x += step) {
@@ -409,8 +407,6 @@ class ProgressBarPainter extends CustomPainter {
                 config.amplitude;
         path.lineTo(clampedX, waveY);
       }
-      // 回到中心线收尾
-      path.lineTo(progressRight, centerY);
 
       if (config.clampToBarBounds) {
         final halfH = barHeight / 2;
