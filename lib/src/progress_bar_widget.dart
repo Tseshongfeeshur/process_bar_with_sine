@@ -344,7 +344,7 @@ class _ProgressBarState extends State<ProgressBar>
     double base = max(2 * widget.thumbRadius, widget.barHeight);
     final config = widget.sineWaveConfig;
     if (config != null && !config.clampToBarBounds) {
-      base += config.amplitude * 2;
+      base += config.effectiveAmplitude * 2;
     }
     return base;
   }

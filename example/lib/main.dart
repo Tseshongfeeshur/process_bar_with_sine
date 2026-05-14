@@ -47,6 +47,7 @@ class _DemoPageState extends State<DemoPage> {
   double _speed = 1.0;
   int _waveCount = 1;
   bool _clampToBarBounds = false;
+  double _reservedAmplitude = 3.0;
   double _lineThumbWidth = 4.0;
   double _lineThumbHeight = 14.0;
   double _lineThumbBorderRadius = 2.0;
@@ -258,6 +259,13 @@ class _DemoPageState extends State<DemoPage> {
               value: _clampToBarBounds,
               onChanged: (v) => setState(() => _clampToBarBounds = v),
             ),
+            _buildSection('预留振幅 (reservedAmplitude): ${_reservedAmplitude.toStringAsFixed(1)}'),
+            Slider(
+              value: _reservedAmplitude,
+              min: 0,
+              max: 8,
+              onChanged: (v) => setState(() => _reservedAmplitude = v),
+            ),
           ],
 
           const SizedBox(height: 32),
@@ -273,6 +281,7 @@ class _DemoPageState extends State<DemoPage> {
       speed: _speed,
       waveCount: _waveCount,
       clampToBarBounds: _clampToBarBounds,
+      reservedAmplitude: _reservedAmplitude,
     );
   }
 

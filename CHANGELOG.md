@@ -1,3 +1,8 @@
+## 1.2.4
+
+- **Add**: `reservedAmplitude` parameter on `SineWaveConfig`. When set, the component height is always calculated using the larger of `amplitude` and `reservedAmplitude`, preventing the bar from changing height when the actual wave amplitude is adjusted.
+- **Fix**: Sine-wave progress bar appeared slightly longer than the flat bar because the wave path endpoints were not aligned to the midline, causing stroke caps to project at an angle. The path now starts and ends at `centerY` for consistent horizontal caps.
+
 ## 1.2.3
 
 - **Refactor**: Replaced the `_userIsDraggingThumb` boolean flag with a nullable `_dragValue` override. When `_dragValue` is `null`, the thumb position is always computed live from `widget.progress`, eliminating the risk of a stuck drag state permanently blocking playback tracking.

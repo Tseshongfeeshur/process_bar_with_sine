@@ -200,7 +200,7 @@ class ProgressBarPainter extends CustomPainter {
     double base = max(2 * thumbRadius, barHeight);
     final config = sineWaveConfig;
     if (config != null && !config.clampToBarBounds) {
-      base += config.amplitude * 2;
+      base += config.effectiveAmplitude * 2;
     }
     return base;
   }
@@ -209,7 +209,7 @@ class ProgressBarPainter extends CustomPainter {
   void _drawBarContent(Canvas canvas, Size barAreaSize) {
     final config = sineWaveConfig;
     final waveOverflow = (config != null && !config.clampToBarBounds)
-        ? config.amplitude
+        ? config.effectiveAmplitude
         : 0.0;
     final barY = waveOverflow;
     final barPaintAreaHeight = barAreaSize.height - waveOverflow;
@@ -395,9 +395,11 @@ class ProgressBarPainter extends CustomPainter {
         ..strokeCap = strokeCap;
 
       final path = Path();
+      // 从中心线出发，保证两端的 strokeCap 朝向水平，与平直进度条等长
+      path.moveTo(barLeft, centerY);
       final startY = centerY +
           sin(phaseOffset + wavePhase) * config.amplitude;
-      path.moveTo(barLeft, startY);
+      path.lineTo(barLeft, startY);
 
       final step = max(1.5, barHeight / 4);
       for (double x = barLeft + step; x <= progressRight + step; x += step) {
@@ -407,6 +409,8 @@ class ProgressBarPainter extends CustomPainter {
                 config.amplitude;
         path.lineTo(clampedX, waveY);
       }
+      // 回到中心线收尾
+      path.lineTo(progressRight, centerY);
 
       if (config.clampToBarBounds) {
         final halfH = barHeight / 2;
